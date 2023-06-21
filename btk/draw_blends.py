@@ -134,6 +134,7 @@ class DrawBlendsGenerator(ABC):
         seed=DEFAULT_SEED,
         apply_shear=False,
         augment_data=False,
+        sky_level_factor=1.0,
     ):
         """Initializes the DrawBlendsGenerator class.
 
@@ -169,6 +170,8 @@ class DrawBlendsGenerator(ABC):
             augment_data (float): If set to True, augment data by adding a random rotation to every
                                 galaxy drawn. Rotation added is recorded via `btk_rotation` column
                                 output.
+            sky_level_factor (float): Factor to control the level of background noise.
+                                    it is used only if "background"/"all" noise is selected.
         """
         self.blend_generator = BlendGenerator(
             catalog, sampling_function, batch_size, shifts, indexes, verbose
@@ -210,6 +213,7 @@ class DrawBlendsGenerator(ABC):
         self.channels_last = channels_last
         self.save_path = save_path
         self.seedseq = np.random.SeedSequence(seed)
+        self.sky_level_factor = sky_level_factor
 
     def check_compatibility(self, survey):
         """Checks that the compatibility between the survey, the catalog and the generator.
@@ -430,7 +434,7 @@ class DrawBlendsGenerator(ABC):
             Images of blend and isolated galaxies as `numpy.ndarray`.
 
         """
-        sky_level = mean_sky_level(survey, filt).to_value("electron")
+        sky_level = mean_sky_level(survey, filt).to_value("electron") * self.sky_level_factor
         blend_catalog.add_column(
             Column(np.zeros(len(blend_catalog)), name="not_drawn_" + filt.name)
         )
